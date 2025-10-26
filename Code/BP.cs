@@ -14,6 +14,7 @@ namespace Vessel
 	using System.Security.Authentication.ExtendedProtection;
 	using System.Windows.Markup;
 	using static ILOG.CPLEX.Cplex.Callback.Context;
+	using static System.Runtime.InteropServices.JavaScript.JSType;
 	using static Vessel.Program;
 	using static Vessel.Program.Vessel;
 
@@ -33,6 +34,7 @@ namespace Vessel
 
 			public inherit_info(inherit_info other)
 			{
+				//
 				this.Indicator = other.Indicator;
 
 				this.Xposition = new int[other.Xposition.Length];
@@ -377,7 +379,7 @@ namespace Vessel
 			{
 				if (other == null) return false;
 
-				
+
 				if (this.id != other.id) return false;
 				if (this.S != other.S) return false;
 				if (this.C != other.C) return false;
@@ -391,7 +393,7 @@ namespace Vessel
 						return false;
 					}
 				}
-				
+
 				if (!Are2DArraysEqual(this.beta, other.beta))
 					return false;
 				if (!Are2DArraysEqual(this.z, other.z))
@@ -403,36 +405,36 @@ namespace Vessel
 				return true;
 			}
 
-			
+
 			public override bool Equals(object obj)
 			{
 				return Equals(obj as Vessel);
 			}
 
-			
+
 			public override int GetHashCode()
 			{
 				unchecked
 				{
 					int hash = 17;
 
-				
+
 					hash = hash * 23 + this.id.GetHashCode();
-					hash = hash * 23 + this.S.GetHashCode();  
+					hash = hash * 23 + this.S.GetHashCode();
 					hash = hash * 23 + this.C.GetHashCode();
 					hash = hash * 23 + this.D.GetHashCode();
 
-					
+
 					if (this.beta != null)
 					{
 						int rows = this.beta.GetLength(0);
 						int cols = this.beta.GetLength(1);
 
-						
+
 						hash = hash * 23 + rows.GetHashCode();
 						hash = hash * 23 + cols.GetHashCode();
 
-						
+
 						for (int i = 0; i < rows; i++)
 						{
 							for (int j = 0; j < cols; j++)
@@ -442,7 +444,7 @@ namespace Vessel
 						}
 					}
 
-					
+
 					if (this.z != null)
 					{
 						int rows = this.z.GetLength(0);
@@ -460,7 +462,7 @@ namespace Vessel
 						}
 					}
 
-					
+
 					if (this.alpha != null)
 					{
 						int d0 = this.alpha.GetLength(0);
@@ -501,7 +503,7 @@ namespace Vessel
 				if (arr1 == null && arr2 == null) return true;
 				if (arr1 == null || arr2 == null) return false;
 
-				
+
 				if (arr1.GetLength(0) != arr2.GetLength(0)) return false;
 				if (arr1.GetLength(1) != arr2.GetLength(1)) return false;
 				if (arr1.GetLength(2) != arr2.GetLength(2)) return false;
@@ -516,10 +518,10 @@ namespace Vessel
 					{
 						for (int k = 0; k < d2; k++)
 						{
-	
+
 							if (arr1[i, j, k] != arr2[i, j, k])
 							{
-								
+
 								return false;
 							}
 						}
@@ -602,27 +604,27 @@ namespace Vessel
 
 			public override bool Equals(object obj)
 			{
-			
+
 				if (obj == null || obj.GetType() != this.GetType())
 					return false;
 
-				
+
 				var label = obj as Label;
 				return label != null &&
 					   id == label.id;
 			}
 
-			
+
 			public override int GetHashCode()
 			{
-				
+
 				return id.GetHashCode();
 			}
 
 			public int CompareTo(Label other)
 			{
 				if (other == null)
-					return 1; 
+					return 1;
 
 				int cmp = this.cost.CompareTo(other.cost);
 				if (cmp == 0) cmp = this.t.CompareTo(other.t);
@@ -640,16 +642,16 @@ namespace Vessel
 			{
 				if (ReferenceEquals(x, y)) return true;
 				if (x == null || y == null) return false;
-				
+
 				return x.id == y.id;
 			}
 
 			public int GetHashCode(Label obj)
 			{
-				
+
 				int hashId = obj.id.GetHashCode();
 
-				return hashId; 
+				return hashId;
 			}
 		}
 
@@ -658,12 +660,12 @@ namespace Vessel
 		public static List<List<(int start, int end)>> conflictInfo;
 		public static int[] switchingCost;
 		static double RC_EPS = 1.0e-5;
-		static int N = 5;
+		static int N = 12;
 		static int W = 3;
 		static int R = 7;
 		static int K = 10;
 		static int T = 144;
-		static int interruptTimes = 2;
+		static int interruptTimes = 0;
 		static int[][] Rk;
 
 		static double Reducedcost = 0;
@@ -683,28 +685,30 @@ namespace Vessel
 				//			   /*8*/ new int[]{4,6},
 				//			   /*9*/ new int[]{0,5} };
 
-				
+
 
 				//Rk = new int[15][] { new int[]{ 1,  6 }, new int[] { 1, 3, 5 }, new int[] {  4, 6 }, new int[] { 3, 5 }, new int[] { 0, 4, 6 },
 				//				new int[]{ 3, 5 }, new int[]{ 0, 2 }, new int[]{ 3, 6 }, new int[]{ 5, 1 }, new int[]{ 2, 6 }, new int[]{ 1, 6 },
 				//				new int[]{ 6, 0 }, new int[]{ 3, 6, 5 }, new int[]{ 1, 5 }, new int[]{ 0, 3, 4 } };//7个料条 
+
 				Rk = new int[15][] { new int[]{ 1, 5, 6 }, new int[] { 1, 3, 5 }, new int[] { 2, 4, 6 }, new int[] { 3, 5 }, new int[] { 0, 4, 6 },
-									 new int[]{ 3, 5, 6 }, new int[]{ 0, 2 }, new int[]{ 3, 6 }, new int[]{ 5, 1 }, new int[]{ 2, 6 }, new int[]{ 1, 6 },
-									 new int[]{ 6, 0 }, new int[]{ 3, 6, 5 }, new int[]{ 1, 5 }, new int[]{ 0, 3, 4 } };//7个料条
+	   				new int[]{ 3, 5, 6 }, new int[]{ 0, 2 }, new int[]{ 3, 6 }, new int[]{ 5, 1 }, new int[]{ 2, 6 }, new int[]{ 1, 6 },
+	   				new int[]{ 6, 0 }, new int[]{ 3, 6, 5 }, new int[]{ 1, 5 }, new int[]{ 0, 3, 4 } };//7个料条
+
 			}
 
 			if (R == 9)
 			{
-				Rk = new int[15][] {
-					new[]{1,5,6,7}, new[]{1,3,5,8}, new[]{2,4,6,7}, new[]{3,5,8},  new[]{0,4,6},
-new[]{3,5,6}, new[]{0,2},   new[]{3,6},   new[]{5,1},  new[]{2,6},
-new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
-				};
+				//				Rk = new int[15][] {
+				//					new[]{1,5,6,7}, new[]{1,3,5,8}, new[]{2,4,6,7}, new[]{3,5,8},  new[]{0,4,6},
+				//new[]{3,5,6}, new[]{0,2},   new[]{3,6},   new[]{5,1},  new[]{2,6},
+				//new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
+				//				};
 
-				//Rk = new int[15][] { new int[]{ 1, 5, 6 }, new int[] { 1, 3, 5 }, new int[] { 2, 4, 6 }, new int[] { 3, 5, 7 }, new int[] { 0, 4, 6, 8 },
-				//				new int[]{ 3, 5, 6, 7 }, new int[]{ 0, 2 ,8}, new int[]{ 3, 6, 7 }, new int[]{ 5, 1, 8 }, new int[]{ 2, 6 }, new int[]{ 1, 6 },
-				//				new int[]{ 6, 0 }, new int[]{ 3, 6, 5 }, new int[]{ 1, 5 }, new int[]{ 0, 3, 4 } };//9个料条
-				//Rk = new int[15][] { new int[] { 7, 5, 6 }, new int[] { 1, 3, 5 }, new int[] { 2, 4, 6 }, new int[] { 3, 5 }, new int[] { 0, 4, 8 }, new int[] { 3, 5, 7 }, new int[] { 0, 2 }, new int[] { 3, 6 }, new int[] { 5, 8 }, new int[] { 2, 7 }, new int[] { 1, 8 }, new int[] { 6, 7 }, new int[] { 3, 6, 5 }, new int[] { 4, 5 }, new int[] { 8, 3, 4 } };
+				Rk = new int[15][] { new int[]{ 1, 5, 6 }, new int[] { 1, 3, 5 }, new int[] { 2, 4, 6 }, new int[] { 3, 5, 7 }, new int[] { 0, 4, 6, 8 },
+								new int[]{ 3, 5, 6, 7 }, new int[]{ 0, 2 ,8}, new int[]{ 3, 6, 7 }, new int[]{ 5, 1, 8 }, new int[]{ 2, 6 }, new int[]{ 1, 6 },
+								new int[]{ 6, 0 }, new int[]{ 3, 6, 5 }, new int[]{ 1, 5 }, new int[]{ 0, 3, 4 } };//9个料条
+																												   //Rk = new int[15][] { new int[] { 7, 5, 6 }, new int[] { 1, 3, 5 }, new int[] { 2, 4, 6 }, new int[] { 3, 5 }, new int[] { 0, 4, 8 }, new int[] { 3, 5, 7 }, new int[] { 0, 2 }, new int[] { 3, 6 }, new int[] { 5, 8 }, new int[] { 2, 7 }, new int[] { 1, 8 }, new int[] { 6, 7 }, new int[] { 3, 6, 5 }, new int[] { 4, 5 }, new int[] { 8, 3, 4 } };
 			}
 			List<Vessel> vessel_para = new List<Vessel>();
 			Vessel v = new Vessel(0, 0, 0, 0, 0, 0, null, null);
@@ -877,7 +881,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 		}
 
 		static List<int> port_stayed = new List<int>();
-	
+
 
 		static void GenerateCombinations(int[][] Rk, int[] Ks, int depth, int[] current, List<int[]> combinations)
 		{
@@ -899,12 +903,12 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 		{
 			var labelList = pq.ToList();
 
-			
+
 			for (int i = labelList.Count - 1; i >= 0; i--)
 			{
 				var current = labelList[i];
 				bool dominated = false;
-				
+
 				for (int j = 0; j < labelList.Count; j++)
 				{
 					if (i == j) continue;
@@ -914,7 +918,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						break;
 					}
 				}
-				
+
 				if (dominated)
 				{
 					labelList.RemoveAt(i);
@@ -946,7 +950,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				int portWaitTime = 0;
 
 
-				
+
 				if (i >= W)// 
 				{
 					portWaitTime = Math.Max(0, portAvailableTime.Min() - vs[i].a);
@@ -967,7 +971,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						assigned[k] = n;
 						n.serviceTime = vs[i].pik[k];
 
-						
+
 					}
 
 					SortedSet<Label> pq = new SortedSet<Label>(Comparer<Label>.Create((a, b) =>
@@ -1006,7 +1010,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						for (int idx = 0; idx < extlbs.Count; idx++)
 						{
 							pq.Add(extlbs[idx]);
-							
+
 						}
 					}
 				}
@@ -1187,6 +1191,14 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 					vs[i].beta[assignedPortID, t] = 1;
 				}
 				vs[i].cost = minCost;
+				if (vs[i].cost == double.MaxValue)
+				{
+					vs[i].assigned = false;
+				}
+				else
+				{
+					vs[i].assigned = true;
+				}
 			}
 		}
 
@@ -1207,7 +1219,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						if (tw.end >= arriveTime)//
 						{
 
-							
+
 							Label ext;
 
 							int serviceStartTime = (int)Math.Max(arriveTime, tw.start);
@@ -1223,7 +1235,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 							}
 							ext.cost = current.cost + (serviceEndTime + 1 - arriveTime + 1) * v.h;
 
-						
+
 							ext.cost -= v.g * Math.Max(current.t - v.d, 0);//
 							ext.cost += v.g * Math.Max(ext.t - v.d, 0);
 
@@ -1240,7 +1252,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 							ext.s = serviceStartTime;
 							ext.currentN = j;
 
-							
+
 							if (ext.processingTime[j] == assigned[j].serviceTime)
 							{
 								ext.finished = current.finished | (1 << j);
@@ -1319,11 +1331,8 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				{
 					foreach (var tw in assigned[j].TimeWindow)
 					{
-
 						if (tw.end >= arriveTime)//
 						{
-
-						
 							Label ext;
 
 							int serviceStartTime = (int)Math.Max(arriveTime, tw.start);
@@ -1380,7 +1389,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 							ext.currentN = j;
 
-							
+
 							if (ext.processingTime[j] == assigned[j].serviceTime)
 							{
 								ext.finished = current.finished | (1 << j);
@@ -1462,7 +1471,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				count++;
 				if (Dominates(lbl, newLabel, v))
 				{
-					
+
 					return true;
 				}
 			}
@@ -1528,7 +1537,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 				if (B.t + diffSum >= A.t)
 				{
-					 
+
 					int switchCost = 0;
 					for (int i = 0; i < unfinishedR.Count; i++)
 					{
@@ -1552,22 +1561,22 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				}
 			}
 
-			
+
 			for (int i = 0; i < A.processingTime.Length; i++)
 			{
 				if (A.processingTime[i] <= B.processingTime[i])
 					return false;
 			}
 
-			
+
 			if (A.cost >= B.cost)
 				return false;
 
-			
+
 			if (A.t >= B.t)
 				return false;
 
-			
+
 			return true;
 		}
 
@@ -1602,26 +1611,26 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 		public static double FindMaxConsecutiveSumSubarrayInRange(double[] arr, int k, int a, int b)
 		{
-			int n = b + 1; 
-			if (k > n - a || k > b - a + 1) return double.MaxValue; 
+			int n = b + 1;
+			if (k > n - a || k > b - a + 1) return double.MaxValue;
 
 			double maxSum = double.MinValue;
 			double currentSum = 0;
-			int start = a; 
+			int start = a;
 			double[] result = new double[k];
 
-			
+
 			for (int i = a; i < a + k; i++)
 			{
 				currentSum += arr[i];
 			}
 
-			
+
 			for (int i = a + k; i <= b; i++)
 			{
-				currentSum += arr[i] - arr[i - k]; 
+				currentSum += arr[i] - arr[i - k];
 
-				
+
 				if (currentSum > maxSum)
 				{
 					maxSum = currentSum;
@@ -1769,7 +1778,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 		static double MPcount = 0;
 
-		
+
 
 		static (List<Vessel>, double) MPsolver(List<Vessel> v)
 		{
@@ -1913,23 +1922,23 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			return (MPres, rmpobj);
 		}
 
-		
+
 
 		static double[] ExtractRow(double[,] array, int rowIndex)
 		{
-			int cols = array.GetLength(1);  
-			double[] rowArray = new double[cols];  
+			int cols = array.GetLength(1);
+			double[] rowArray = new double[cols];
 			for (int j = 0; j < cols; j++)
 			{
-				rowArray[j] = array[rowIndex, j];  
+				rowArray[j] = array[rowIndex, j];
 			}
-			return rowArray;  
+			return rowArray;
 		}
 
 
 		public static double SumOfKLargestInRange(double[] arr, int start, int end, int k)
 		{
-			
+
 			if (arr == null
 				|| arr.Length == 0
 				|| start < 0
@@ -1946,17 +1955,17 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				return double.MinValue;
 			}
 
-			
+
 			double[] subArray = new double[length];
 			for (int i = 0; i < length; i++)
 			{
 				subArray[i] = arr[start + i];
 			}
 
-			
+
 			Array.Sort(subArray);
 
-			
+
 			double sum = 0;
 			for (int i = length - k; i < length; i++)
 			{
@@ -1989,7 +1998,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 							{
 								if (tw.end >= arriveTime)//
 								{
-									
+
 									Label ext;
 
 									int serviceStartTime = (int)Math.Max(arriveTime, tw.start);
@@ -2323,15 +2332,15 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						return false;
 				}
 
-				
+
 				if (A.cost >= B.cost)
 					return false;
 
-				
+
 				if (A.t >= B.t)
 					return false;
 
-				
+
 				return true;
 			}
 
@@ -2367,7 +2376,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				{
 					if (branchInfo.Xposition[0] == v.id)
 					{
-						if (branchInfo.Indicator == 1) 
+						if (branchInfo.Indicator == 1)
 						{
 							if (branchInfo.Xposition[1] == v.Ki[lb.currentN])
 							{
@@ -2522,7 +2531,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						if (cmp == 0) cmp = a.t.CompareTo(b.t);
 						if (cmp == 0) cmp = a.switchTime.CompareTo(b.switchTime);
 						if (cmp == 0) cmp = a.id.CompareTo(b.id);
-						return cmp; 
+						return cmp;
 					}));
 
 					Label init = new Label(v.K);
@@ -2560,16 +2569,16 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 						while (pq.Count > 0)
 						{
-							
+
 							RemoveDominatedWithin(pq, v);
 
 							Label current = null;
-							
+
 							current = pq.Min;
 
 							if (current.finished == Math.Pow(2, assigned.Count()) - 1)
 							{
-								
+
 								if (current.delta == delta)
 								{
 									//bestSolutions.Add(current);
@@ -2662,7 +2671,6 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 			if (minCost - pi[v.id - 1] < 0)
 			{
-
 				while (iterlb.prev != null)
 				{
 					if (iterlb.finished != 0 || iterlb.processingTime.Any(x => x > 0))
@@ -2718,18 +2726,554 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 						v.cost = CalCostVessel(v);
 
 						return (v, minCost - pi[v.id - 1]);
-						//break;
+
 					}
 				}
 			}
 
-			else//若reduced cost大于等于0
+			else
 			{
 				return (null, int.MaxValue);
 			}
 
 			return (null, int.MaxValue);
 		}
+
+
+		public static int testCount2 = 0;
+
+		public static (double cost, int[] order, int[] start, int[] finish, int bestT)
+			SolveWithPermutations(int a, double h, int d, double g, Node[] nds, double[] gammaD, double[,] alphaD, Vessel v, List<inherit_info> branch)
+		{
+			testCount2++;
+			int K = nds.Length;
+
+
+			double[][] Sig = new double[K][];
+			for (int k = 0; k < K; ++k)
+			{
+				var tempADual = ExtractRow(alphadual, nds[k].id);
+
+				foreach (var ctr in branch)
+				{
+					if (v.Ki[k] == ctr.Xposition[1])
+					{
+						if (nds[k].id == ctr.Xposition[2])
+						{
+							if (ctr.Indicator == 0)
+							{
+								tempADual[ctr.Xposition[3]] = -1e10;
+							}
+
+							if (ctr.Indicator == 1)
+							{
+								int earliest = ctr.Xposition[3] - nds[k].serviceTime;
+								int latest = ctr.Xposition[3] + nds[k].serviceTime;
+								for (int t = a; t < T; t++)
+								{
+									if (t >= earliest && t <= latest)
+									{
+
+									}
+									else
+									{
+										tempADual[t] = -1e10;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				Sig[k] = BuildPrefix(tempADual, T);
+			}
+
+			double[] U = BuildPrefix(gammaD, T);
+			double[] D = new double[T];
+
+			for (int t = 0; t < T; t++)
+			{
+
+				D[t] = g * Math.Max(0, t - d);
+			}
+
+
+			int[] idx = new int[K];
+
+			for (int i = 0; i < K; ++i)
+			{
+				idx[i] = i;
+			}
+
+			bool[][] feasibleStart = new bool[K][];
+			for (int k = 0; k < K; ++k)
+			{
+				int len = nds[k].serviceTime;
+				feasibleStart[k] = new bool[T + 1];
+				foreach (var w in nds[k].TimeWindow)
+				{
+					int startMin = Math.Max(a + 1, w.start);
+					int startMax = Math.Min(T - len, w.end - (len - 1));
+					if (startMax < startMin) continue;
+					for (int t0 = startMin; t0 <= startMax; ++t0)
+						feasibleStart[k][t0] = true;
+				}
+			}
+
+			double bestCost = double.PositiveInfinity;
+			int[] bestOrder = Array.Empty<int>();
+			int[] bestStart = Array.Empty<int>();
+			int[] bestFinish = Array.Empty<int>();
+			int bestT = a;
+
+			foreach (var perm in Permute(idx))
+			{
+
+				double[,] dp = new double[K + 1, T + 1];
+				const double INF = double.PositiveInfinity;
+				for (int i = 0; i <= K; ++i)
+					for (int t = 0; t <= T; ++t) dp[i, t] = INF;
+
+
+
+				for (int i = 1; i <= K; ++i) dp[i, a] = INF;
+
+				bool[,] fromFinish = new bool[K + 1, T + 1];
+				int[,] prevTime = new int[K + 1, T + 1];
+
+
+				dp[0, a] = 0.0;
+				fromFinish[0, a] = false;
+				prevTime[0, a] = -1;
+
+
+				for (int t = a + 1; t < T; ++t)
+				{
+					double idleCost = h + (D[t] - D[t - 1]);
+
+					for (int i = 0; i <= K; ++i)
+					{
+						double prev = dp[i, t - 1];
+						if (prev < INF)
+						{
+							double cand = double.MaxValue;
+							if (i == 0)
+							{
+								cand = prev + idleCost;
+							}
+
+							else
+							{
+								cand = -gammaD[t] + prev + idleCost;
+							}
+
+							if (cand < dp[i, t])
+							{
+								dp[i, t] = cand;
+								fromFinish[i, t] = false;
+								prevTime[i, t] = t - 1;
+							}
+						}
+					}
+
+
+					for (int i = 1; i <= K; ++i)
+					{
+						int job = perm[i - 1];
+						int len = nds[job].serviceTime + 1;
+						int tt = t - len;
+
+						if (tt < a) continue;
+						if (!feasibleStart[job][tt + 1]) continue;
+
+						double prev = dp[i - 1, tt];
+						if (prev == INF) continue;
+
+
+						double occ_k = Sig[job][t] - Sig[job][tt];
+						double proc = U[t] - U[tt];
+						double dlt = D[t] - D[tt];
+
+						double cand = prev - occ_k - proc + h * len + dlt;
+
+						if (cand < dp[i, t])
+						{
+							dp[i, t] = cand;
+							fromFinish[i, t] = true;
+							prevTime[i, t] = tt + 1;
+						}
+					}
+				}
+
+
+				double bestCostThis = double.PositiveInfinity;
+				int bestTThis = a;
+				for (int t = a; t <= T; ++t)
+				{
+					if (dp[K, t] < bestCostThis)
+					{
+						bestCostThis = dp[K, t];
+						bestTThis = t;
+					}
+				}
+
+				bool feasibleFlag = true;
+				double tempbestCost = double.MaxValue;
+				int tempbestT = -1;
+
+				if (bestCostThis < bestCost)
+				{
+					tempbestCost = bestCost;
+					tempbestT = bestT;
+
+					bestCost = bestCostThis;
+					bestT = bestTThis;
+
+					// 回溯顺序与时间
+					int[] starts = new int[K];
+					int[] finishes = new int[K];
+					int[] order = new int[K];
+
+					int i = K, t = bestT;
+					while (i > 0)
+					{
+						if (fromFinish[i, t])
+						{
+							//int job = perm[i - 1];
+							//int tt = prevTime[i, t];
+							//order[i - 1] = job;
+							//starts[i - 1] = tt;
+							//finishes[i - 1] = t;
+							//i -= 1;
+							//t = tt;
+							int job = perm[i - 1];
+							int s = prevTime[i, t];   // s = start = tt+1
+							order[i - 1] = job;
+							starts[i - 1] = s;
+							finishes[i - 1] = t;
+
+							i -= 1;
+							t = s - 1;
+						}
+						else
+						{
+							t = prevTime[i, t];
+						}
+					}
+					if (branch != null)
+					{
+						foreach (var ctr in branch)
+						{
+							for (int k = 0; k < v.K; k++)
+							{
+								if (v.Ki[order[k]] == ctr.Xposition[1])
+								{
+									if (ctr.Xposition[2] == nds[order[k]].id)
+									{
+										if (ctr.Indicator == 0)
+										{
+											if (starts[k] <= ctr.Xposition[3] && finishes[k] >= ctr.Xposition[3])
+											{
+												feasibleFlag = false;
+											}
+										}
+
+										if (ctr.Indicator == 1)
+										{
+											if (starts[k] <= ctr.Xposition[3] && finishes[k] >= ctr.Xposition[3])
+											{
+
+											}
+											else
+											{
+												feasibleFlag = false;
+											}
+										}
+
+										if (feasibleFlag == false)
+										{
+											break;
+										}
+									}
+								}
+							}
+							if (feasibleFlag == false)
+							{
+								break;
+							}
+						}
+					}
+
+					if (feasibleFlag == false)
+					{
+						bestCost = tempbestCost;
+						bestT = tempbestT;
+						continue;
+					}
+
+					bestOrder = order;
+					bestStart = starts;
+					bestFinish = finishes;
+				}
+			}
+
+			return (bestCost, bestOrder, bestStart, bestFinish, bestT);
+		}
+
+
+		private static double[] BuildPrefix(double[] slot, int H)
+		{
+			int n = slot.Length;
+			var P = new double[n];
+			P[0] = slot[0];
+			for (int t = 1; t < n; ++t)
+				P[t] = P[t - 1] + slot[t];
+			return P;
+		}
+
+
+		private static IEnumerable<int[]> Permute(int[] a)
+		{
+			int n = a.Length;
+			int[] arr = (int[])a.Clone();
+			foreach (var _ in PermRec(0)) yield return (int[])arr.Clone();
+
+			IEnumerable<int> PermRec(int i)
+			{
+				if (i == n) { yield return 0; yield break; }
+				for (int j = i; j < n; ++j)
+				{
+					(arr[i], arr[j]) = (arr[j], arr[i]);
+					foreach (var _ in PermRec(i + 1)) yield return 0;
+					(arr[i], arr[j]) = (arr[j], arr[i]);
+				}
+			}
+		}
+
+		public static int testCount = 0;
+		public static (Vessel v, double rdCost)
+			SubproblemDPDelta0(Vessel v1, List<inherit_info> addconstraints)//
+		{
+			testCount++;
+
+			Vessel v = new Vessel(v1);
+			v.lambda = -1;
+
+			//tempVessel.e = new int[R, T];
+			v.x = new double[K, R, T];
+			v.alpha = new double[K, R, T];
+			v.z = new double[K, R];
+			v.beta = new double[W, T];
+
+			v.C = -1;
+			v.S = -1;
+			v.D = 0;
+
+
+			List<inherit_info> tempBranch = new List<inherit_info>();
+			if (addconstraints != null)
+			{
+				foreach (var ctr in addconstraints)
+				{
+					if (ctr.Xposition[0] == v.id)
+					{
+						tempBranch.Add(new inherit_info(ctr));
+					}
+				}
+			}
+
+			List<Label> feasibleSolution = new List<Label>();
+			List<Label> bestSolutions = new List<Label>();
+			SortedDictionary<(int berth, int combIdx), List<Label>> allBestSolutions = new SortedDictionary<(int berth, int combIdx), List<Label>>();
+
+			List<int[]> combinations = new List<int[]>();
+
+			GenerateCombinations(Rk, v.Ki, 0, new int[v.Ki.Length], combinations);
+			Node[] assigned;
+
+			conflictInfo = ReadConflictData(conflictDataPath);
+			InitialNodes();
+
+
+			double minCost = double.MaxValue;
+			int minBerth = 0;
+			int minCombIdx = 0;
+
+			double globalBest = double.MaxValue;
+			int bestCmax = -1;
+			int[] bestStartsByJob = new int[K];
+			int[] bestEndsByJob = new int[K];
+			int[] bestPerm = null;
+			int[] bestComb = new int[K];
+			int bestBerth = -1;
+
+			for (int b = 0; b < W; b++)
+			{
+				double thirdTerm = double.MaxValue;
+				if (b == 0)
+				{
+					thirdTerm = TestDual[b];
+				}
+				else if (b == W - 1)
+				{
+					thirdTerm = -TestDual[b - 1];
+				}
+				else
+				{
+					thirdTerm = -TestDual[b - 1] + TestDual[b];
+				}
+
+				for (int i = 0; i < combinations.Count; i++)
+				{
+
+					assigned = new Node[v.K];
+					for (int j = 0; j < v.K; j++)
+					{
+						Node n = new Node(allNodes[combinations[i][j]]);
+						assigned[j] = n;
+						n.serviceTime = v.pik[j];
+					}
+
+					bool skipFlag = false;
+					foreach (var ctr in tempBranch)
+					{
+						for (int k = 0; k < v.K; k++)
+						{
+							if (ctr.Xposition[1] == v.Ki[k])
+							{
+								//if (ctr.Indicator == 0)
+								//{
+								//	if (assigned[k].id == ctr.Xposition[2])//如果分配的料条和分支约束中的料条相同
+								//	{
+								//		skipFlag = true;
+								//		break;
+								//	}
+								//}
+
+								if (ctr.Indicator == 1)
+								{
+									if (assigned[k].id != ctr.Xposition[2])//如果分配的料条和分支约束中的料条不同
+									{
+										skipFlag = true;
+										break;
+									}
+								}
+							}
+						}
+						if (skipFlag) break;
+					}
+
+					if (skipFlag == true)
+					{
+						continue;
+					}
+
+					var curBest = SolveWithPermutations(v.a, v.h, v.d, v.g, assigned, ExtractRow(wdual, b), alphadual, v, tempBranch);
+
+					curBest.cost += assigned.Sum(x => x.switchCost);
+
+					curBest.cost += thirdTerm;
+
+					if (curBest.cost < globalBest)
+					{
+						globalBest = curBest.cost;
+						bestCmax = curBest.bestT;
+						bestPerm = (int[])curBest.order.Clone();
+						bestComb = (int[])combinations[i].Clone();
+						bestBerth = b;
+
+						// 将“按排列位置”的开工时刻映射回“原物料索引 j”
+						for (int pos = 0; pos < v.K; pos++)
+						{
+							int j = bestPerm[pos];           // 原物料索引
+							bestStartsByJob[j] = curBest.start[pos];
+							bestEndsByJob[j] = bestStartsByJob[j] + assigned[j].serviceTime;
+						}
+					}
+
+				}
+			}
+
+			if ((globalBest - pi[v.id - 1]) < 0)
+			{
+				Console.WriteLine();
+				Console.WriteLine("dp " + (globalBest - pi[v.id - 1]));
+
+				int[] bestStarts = bestStartsByJob
+					.Reverse()                 
+					.SkipWhile(x => x == 0)    
+					.Reverse()                 
+					.ToArray();
+
+				int[] bestEnds = bestEndsByJob
+					.Reverse()                 
+					.SkipWhile(x => x == 0)    
+					.Reverse()                 
+					.ToArray(); 
+
+				v.C = bestEnds.Max();
+				v.D = Math.Max(0, v.C - v.d);
+				v.w = bestBerth;
+				v.S = bestStarts.Min();
+
+				for (int kk = 0; kk < v.K; kk++)
+				{
+					int k = v.Ki[bestPerm[kk]];
+					int r = bestComb[bestPerm[kk]];
+					v.z[k, r] = 1;
+					for (int t = bestStarts[bestPerm[kk]]; t <= bestEnds[bestPerm[kk]]; t++)
+					{
+						v.alpha[k, r, t] = 1;
+					}
+
+					for (int t = bestStarts[bestPerm[kk]]; t < bestEnds[bestPerm[kk]]; t++)
+					{
+						v.x[k, r, t] = 1;
+					}
+				}
+
+				v.p[bestBerth] = 1;
+
+				for (int t = bestStarts.Min(); t <= bestEnds.Max(); t++)
+				{
+					v.beta[bestBerth, t] = 1;
+				}
+
+				v.cost = CalCostVessel(v);
+
+				//if (Math.Abs(v.cost - globalBest) > RC_EPS)
+				//{
+				//	Console.WriteLine(	);
+				//}
+
+				return (v, globalBest - pi[v.id - 1]);
+			}
+
+			else
+			{
+				if (Math.Abs(globalBest - pi[v.id - 1] - 0) < RC_EPS)
+				{
+					return (null, 0);
+				}
+				else
+				{
+					return (null, double.MaxValue);
+				}
+			}
+		}
+
+		//				return ((globalBest - pi[v.id - 1]), bestPerm, bestComb, bestBerth, bestStartsByJob, bestEndsByJob);
+		//			}
+
+		//			else
+		//			{
+		//				return (null, int.MaxValue);
+		//			}
+
+		//return (0, null, null, -1, null, null);
+
+		//		}
+
 
 		public static double CalCostVessel(Vessel v)
 		{
@@ -2881,7 +3425,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 			subsolver.AddMinimize(spObj);
 
-			
+
 
 			for (int t = 0; t < T; t++)
 			{
@@ -2919,6 +3463,15 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 					str.AddTerm(1, Z[k, r]);
 				}
 				subsolver.AddEq(str, 1, "ctr5");//1j
+			}
+
+			foreach (int k in tempVessel.Ki)
+			{
+				ILinearIntExpr str = subsolver.LinearIntExpr();
+				foreach (int r in Rk[k])
+				{
+					subsolver.AddLe(alpha[k, r, T - 1], 0, "ctr5");
+				}
 			}
 
 			for (int t = 0; t < T; t++)//1m
@@ -3061,7 +3614,28 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			}
 			subsolver.AddEq(str30, 1, "ctr26"); //AddEq(str30, 1)
 
+			//nonpreemptive case
+			
+			//foreach (int k in tempVessel.Ki)
+			//{
+			//	ILinearIntExpr str31 = subsolver.LinearIntExpr();
+			//	ILinearIntExpr str32 = subsolver.LinearIntExpr();
 
+			//	foreach (int r in Rk[k])
+			//	{
+			//		for (int t = 0; t < T; t++)
+			//		{
+			//			str31.AddTerm(1, alpha[k, r, t]);
+			//			str32.AddTerm(1, X[k, r, t]);
+			//		}
+
+			//	}
+
+			//	subsolver.AddLe(str31, subsolver.Sum(str32, 1), "ctr16");//1r
+			//}
+
+
+			//preemptive case
 			ILinearIntExpr str31 = subsolver.LinearIntExpr();
 			ILinearIntExpr str32 = subsolver.LinearIntExpr();
 			foreach (int k in tempVessel.Ki)
@@ -3079,6 +3653,8 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			}
 
 			subsolver.AddLe(str31, subsolver.Sum(str32, tempVessel.K + interruptTimes), "ctr16");//1r
+
+			
 
 			if (addconstraints != null)
 			{
@@ -3131,13 +3707,13 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				Console.WriteLine("D: " + subsolver.GetValue(D));
 				//Console.WriteLine("h cost " + (subsolver.GetValue(costC) - tempVessel.h * tempVessel.a));
 				//Console.WriteLine("g cost " + subsolver.GetValue(costD));
-				//Console.WriteLine("l cost " + subsolver.GetValue(str3));
-				//Console.WriteLine("gamma cost " + subsolver.GetValue(reducedcostBeta));
-				//Console.WriteLine("tau cost " + subsolver.GetValue(reducedcostAlpha));
+				Console.WriteLine("l cost " + subsolver.GetValue(str3));
+				Console.WriteLine("gamma cost " + subsolver.GetValue(reducedcostBeta));
+				Console.WriteLine("tau cost " + subsolver.GetValue(reducedcostAlpha));
 
 				tempVessel.cost = subsolver.GetValue(subsolver.Diff(subsolver.Sum(subsolver.Sum(costC, costD), str3), tempVessel.h * tempVessel.a));
 				tempVessel.lambda = 0;
-				
+
 
 				tempVessel.S = (int)Math.Round(subsolver.GetValue(S));
 				tempVessel.C = (int)Math.Round(subsolver.GetValue(C));
@@ -3147,6 +3723,9 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 
 				double spObjVal = subsolver.GetObjValue() - pi[tempVessel.id - 1];//
+
+				Console.WriteLine(subsolver.GetObjValue());
+				Console.WriteLine(pi[tempVessel.id - 1]);
 
 				//Console.WriteLine("obj " + subsolver.GetValue(spObj));
 				//Console.WriteLine("Switching" + subsolver.GetValue(str3));
@@ -3293,7 +3872,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			{
 				P[w] = subsolver.BoolVar("P_" + w);
 			}
-			
+
 
 
 
@@ -3567,7 +4146,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			{
 				str30.AddTerm(1, P[b]);
 			}
-			subsolver.AddEq(str30, 1, "ctr26"); 
+			subsolver.AddEq(str30, 1, "ctr26");
 
 
 			ILinearIntExpr str31 = subsolver.LinearIntExpr();
@@ -3684,7 +4263,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 				return (tempVessel.cost, spObjVal);
 
-				
+
 			}
 
 			else
@@ -3751,7 +4330,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			while (true)
 			{
 				DateTime timerCheck = DateTime.Now;
-				if ((timerCheck - timer).TotalSeconds > 7200)
+				if ((timerCheck - timer).TotalSeconds > 7199)
 				{
 					Console.WriteLine("stop");
 					while (true)
@@ -3807,11 +4386,8 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				int iterCount = 0;
 				int spSolvedCount = 0;
 				(mpRes, mpObj) = MPsolver(A.ToList());
-				if (Math.Abs(mpObj-768050)<1)
-				{
-					Console.WriteLine(	);
-				}
-				
+
+
 				DateTime initialSolTime = DateTime.Now;
 				Console.WriteLine((initialSolTime - initialSolBegin).TotalSeconds);
 				if (mpRes == null)
@@ -3820,7 +4396,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				}
 				if (mpRes.Count == N)
 				{
-					
+
 					if (UB > mpObj)
 					{
 						UB = mpObj;
@@ -3843,10 +4419,10 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 								.GroupBy(x => x.Vessel)
 								.Where(g => g.Count() > 1)
 								.SelectMany(g => g.Select(v => v.Index))
-								.OrderByDescending(x => x) 
+								.OrderByDescending(x => x)
 								.ToList();
 
-					
+
 					foreach (var index in duplicateIndices)
 					{
 						Console.WriteLine("Duplicate index: " + index);
@@ -3862,10 +4438,10 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 								.GroupBy(x => x.Vessel)
 								.Where(g => g.Count() > 1)
 								.SelectMany(g => g.Select(v => v.Index))
-								.OrderByDescending(x => x) 
+								.OrderByDescending(x => x)
 								.ToList();
 
-					
+
 					foreach (var index in duplicateIndices2)
 					{
 						Console.WriteLine("Duplicate index: " + index);
@@ -3927,7 +4503,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				for (int i = 0; i < N; i++)
 				{
 					DateTime timerCheck2 = DateTime.Now;
-					if ((timerCheck2 - timer).TotalSeconds > 7200)
+					if ((timerCheck2 - timer).TotalSeconds > 7199)
 					{
 						Console.WriteLine("stop");
 						while (true)
@@ -3981,121 +4557,231 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 					spCount++;
 
-
 					(Vessel resSP, double rdCost) spRes = new(new Vessel(), 0.0);
-					//DateTime a = DateTime.Now;
-					//var spResLS = SubproblemLabelSetting(templateVessel[i], branchInfos, false);
-					//DateTime b = DateTime.Now;
 
-					//LSTime += (b - a).TotalSeconds;
-					#region
-					//if (spResLS.pattern != null)
-					//{
-					//	var checkLS = SubproblemCplexCheck(templateVessel[i], spResLS.pattern, branchInfos);
+					if (interruptTimes == 0)
+					{
 
-					//	if (checkLS.rdCost > RC_EPS)
-					//	{
+						//==============DP==============//
+						//DateTime a = DateTime.Now;
+						//spRes = SubproblemDPDelta0(templateVessel[i], branchInfos);
+						//DateTime b = DateTime.Now;
+						//DPTime += (b - a).TotalSeconds;
+						//==============================//
 
-					//		Console.WriteLine("!!!!!!!!!!!!!!");
-					//	}
-					//	if (spResLS.pattern.cost != checkLS.vesselCost)
-					//	{
-					//		Console.WriteLine("00000000000000000000000");
+						#region
+						//if (spRes.resSP != null)
+						//{
+						//	var testRes = SubproblemCplexCheck(spRes.resSP, spRes.resSP, branchInfos);
+						//	if (testRes.vesselCost != spRes.resSP.cost)
+						//	{
+						//		Console.WriteLine();
+						//	}
+						//}
 
-					//		SubproblemCplexCheck(templateVessel[i], spResLS.pattern, branchInfos);
-					//	}
+						//var ss = SubproblemCplex(templateVessel[i], branchInfos);
 
-					//	if (Math.Abs(spResLS.cost - checkLS.rdCost) > RC_EPS)
-					//	{
-					//		Console.WriteLine("000000000000000000");
-					//	}
+						//if (Math.Abs(spRes.rdCost - ss.rdCost) > RC_EPS)
+						//{
+						//	Console.WriteLine();
+						//}
+						#endregion
 
-					//	if (spResLS.cost > -1)
-					//	{
-					//		Console.WriteLine();
-					//	}
-					//}
+						//============cplex=============//
+						DateTime a = DateTime.Now;
+						spRes = SubproblemCplex(templateVessel[i], branchInfos);
+						DateTime b = DateTime.Now;
+						CplexTime += (b - a).TotalSeconds;
+						//==============================//
 
-					//var cplexTest = SubproblemCplex(templateVessel[i], branchInfos);
+						#region
+						//spRes = SubproblemDPDelta0(templateVessel[i], branchInfos);
 
-					//if (cplexTest.rdCost != spResLS.cost)
-					//{
-					//	Console.WriteLine(	);
-					//}
+						//DPTime += (b - a).TotalSeconds;
+						//var ss = SubproblemCplex(templateVessel[i], branchInfos);
 
-					//if (spResLS.pattern != null)
-					//{
-					//	if (cplexTest.resSP.cost != spResLS.pattern.cost)
-					//	{
-					//		Console.WriteLine();
-					//	}
+						//DateTime a = DateTime.Now;
+						//var spResLS = SubproblemLabelSetting(templateVessel[i], branchInfos, false);
+						//DateTime b = DateTime.Now;
 
-					//}
+						//LSTime += (b - a).TotalSeconds;
+						#endregion
 
-					//if (spResLS.cost == cplexTest.rdCost)
-					//{
-					//	Console.WriteLine("========================LS=========================");
-					//	for (int k = 0; k < K; k++)
-					//	{
-					//		for (int r = 0; r < R; r++)
-					//		{
-					//			for (int t = 0; t < T; t++)
-					//			{
-					//				if (spResLS.pattern.x[k, r, t] == 1)
-					//				{
-					//					Console.WriteLine(k + " " + r + " " + t);
-					//				}
-					//			}
-					//		}
-					//	}
+						//============ls + cplex=============//
+						//DateTime a = DateTime.Now;
+						//var spResLS = SubproblemLabelSetting(templateVessel[i], branchInfos, false);
+						//DateTime b = DateTime.Now;
+
+						//LSTime += (b - a).TotalSeconds;
+
+						//if (spResLS.pattern != null && spResLS.cost < -RC_EPS)
+						//{
+						//	spRes = (new Vessel(spResLS.pattern), spResLS.cost);
+						//}
+
+						//else
+						//{
+						//	DateTime c = DateTime.Now;
+						//	spRes = SubproblemCplex(templateVessel[i], branchInfos);
+						//	DateTime d = DateTime.Now;
+						//	CplexTime += (d - c).TotalSeconds;
+						//}
+						//==============================//
+
+						#region
+						//DateTime c = DateTime.Now;
+						//spRes = SubproblemCplex(templateVessel[i], branchInfos);
+						//DateTime d = DateTime.Now;
+						//CplexTime += (d - c).TotalSeconds;
+
+						//if (spResLS.pattern != null && spResLS.cost < -RC_EPS)
+						//{
+						//	spRes = (new Vessel(spResLS.pattern), spResLS.cost);
+						//}
+
+						//else
+						//{
+						//DateTime c = DateTime.Now;
+						//spRes = SubproblemCplex(templateVessel[i], branchInfos);
+						//DateTime d = DateTime.Now;
+						//CplexTime += (d - c).TotalSeconds;
+						//}
+
+						//var ss= SubproblemDPDelta0(templateVessel[i], branchInfos);
+						//if (Math.Abs(spRes.rdCost - ss.rdCost) > RC_EPS)
+						//{
+						//	Console.WriteLine();
+						//}
+
+						//if (ss.v != null)
+						//{
+						//	if (Math.Abs(spRes.resSP.cost - ss.v.cost) > RC_EPS)
+						//	{
+						//		Console.WriteLine();
+						//	}
+						//}
+						#endregion
+					}
 
 
-					//	Console.WriteLine("========================CPLEX=========================");
-					//	for (int k = 0; k < K; k++)
-					//	{
-					//		for (int r = 0; r < R; r++)
-					//		{
-					//			for (int t = 0; t < T; t++)
-					//			{
-					//				if (cplexTest.resSP.x[k, r, t] == 1)
-					//				{
-					//					Console.WriteLine(k + " " + r + " " + t);
-					//				}
-					//			}
-					//		}
-					//	}
-					//}
+					else
+					{
+						//============================LS+CPLEX===========================//
+						DateTime a = DateTime.Now;
+						var spResLS = SubproblemLabelSetting(templateVessel[i], branchInfos, false);
+						DateTime b = DateTime.Now;
+
+						LSTime += (b - a).TotalSeconds;
+						#region
+						//if (spResLS.pattern != null)
+						//{
+						//	var checkLS = SubproblemCplexCheck(templateVessel[i], spResLS.pattern, branchInfos);
+
+						//	if (checkLS.rdCost > RC_EPS)
+						//	{
+
+						//		Console.WriteLine("!!!!!!!!!!!!!!");
+						//	}
+						//	if (spResLS.pattern.cost != checkLS.vesselCost)
+						//	{
+						//		Console.WriteLine("00000000000000000000000");
+
+						//		SubproblemCplexCheck(templateVessel[i], spResLS.pattern, branchInfos);
+						//	}
+
+						//	if (Math.Abs(spResLS.cost - checkLS.rdCost) > RC_EPS)
+						//	{
+						//		Console.WriteLine("000000000000000000");
+						//	}
+
+						//	if (spResLS.cost > -1)
+						//	{
+						//		Console.WriteLine();
+						//	}
+						//}
+
+						//var cplexTest = SubproblemCplex(templateVessel[i], branchInfos);
+
+						//if (cplexTest.rdCost != spResLS.cost)
+						//{
+						//	Console.WriteLine(	);
+						//}
+
+						//if (spResLS.pattern != null)
+						//{
+						//	if (cplexTest.resSP.cost != spResLS.pattern.cost)
+						//	{
+						//		Console.WriteLine();
+						//	}
+
+						//}
+
+						//if (spResLS.cost == cplexTest.rdCost)
+						//{
+						//	Console.WriteLine("========================LS=========================");
+						//	for (int k = 0; k < K; k++)
+						//	{
+						//		for (int r = 0; r < R; r++)
+						//		{
+						//			for (int t = 0; t < T; t++)
+						//			{
+						//				if (spResLS.pattern.x[k, r, t] == 1)
+						//				{
+						//					Console.WriteLine(k + " " + r + " " + t);
+						//				}
+						//			}
+						//		}
+						//	}
 
 
-					//=======================================================//
-					//if (spResLS.cost != cplexTest.rdCost && spResLS.cost != int.MaxValue)
-					//{
-					//	if (spResLS.cost >= 0 && cplexTest.rdCost < 0)
-					//		Console.WriteLine();
-					//}
+						//	Console.WriteLine("========================CPLEX=========================");
+						//	for (int k = 0; k < K; k++)
+						//	{
+						//		for (int r = 0; r < R; r++)
+						//		{
+						//			for (int t = 0; t < T; t++)
+						//			{
+						//				if (cplexTest.resSP.x[k, r, t] == 1)
+						//				{
+						//					Console.WriteLine(k + " " + r + " " + t);
+						//				}
+						//			}
+						//		}
+						//	}
+						//}
 
-					#endregion
 
-					//===========================================================//
-					//if (spResLS.pattern != null && spResLS.cost < -RC_EPS)
-					//{
-					//	spRes = (new Vessel(spResLS.pattern), spResLS.cost);
-					//}
+						//=======================================================//
+						//if (spResLS.cost != cplexTest.rdCost && spResLS.cost != int.MaxValue)
+						//{
+						//	if (spResLS.cost >= 0 && cplexTest.rdCost < 0)
+						//		Console.WriteLine();
+						//}
 
-					//else
-					//{
-					//	DateTime c = DateTime.Now;
-					//	spRes = SubproblemCplex(templateVessel[i], branchInfos);
-					//	DateTime d = DateTime.Now;
-					//	CplexTime += (d - c).TotalSeconds;
-					//}
-					//=========================================================//
-					DateTime c = DateTime.Now;
-					spRes = SubproblemCplex(templateVessel[i], branchInfos);
-					DateTime d = DateTime.Now;
+						#endregion
 
-					CplexTime += (d - c).TotalSeconds;
+						if (spResLS.pattern != null && spResLS.cost < -RC_EPS)
+						{
+							spRes = (new Vessel(spResLS.pattern), spResLS.cost);
+						}
 
+						else
+						{
+							DateTime c = DateTime.Now;
+							spRes = SubproblemCplex(templateVessel[i], branchInfos);
+							DateTime d = DateTime.Now;
+							CplexTime += (d - c).TotalSeconds;
+						}
+						//=========================================================//
+
+						//=========================CPLEX=======================//
+						//DateTime c = DateTime.Now;
+						//spRes = SubproblemCplex(templateVessel[i], branchInfos);
+						//DateTime d = DateTime.Now;
+
+						//CplexTime += (d - c).TotalSeconds;
+						//====================================================//
+					}
 					#region
 					//Console.WriteLine("=======SP" + i + "=======");
 					//for (int k = 0; k < K; k++)
@@ -4120,11 +4806,11 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 					if (spRes.rdCost > -RC_EPS)
 					{
-						
-							spSolvedCount++;
-							Console.WriteLine("求解到最优 or 不可行");
-							Console.WriteLine(i);
-						
+
+						spSolvedCount++;
+						Console.WriteLine("求解到最优 or 不可行");
+						Console.WriteLine(i);
+
 					}
 
 
@@ -4329,6 +5015,8 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			rootCplexTime = CplexTime;
 			rootLSTime = LSTime;
 
+			rootDPTime = DPTime;
+
 			LB = tempRes.val;
 
 			if (tempRes.ptns != null)
@@ -4389,6 +5077,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				Console.WriteLine("Feas val " + UB);
 				Console.WriteLine("overall runtime " + 7200);
 				Console.WriteLine("root LS time: " + rootLSTime);
+				Console.WriteLine("root DP time: " + rootDPTime);
 				Console.WriteLine("root Cplex time " + rootCplexTime);
 				Console.WriteLine("root UB " + rootUB);
 				Console.WriteLine("root LB " + rootLB);
@@ -4450,7 +5139,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				List<Vessel> currentPond = currentParent.Pond;
 				List<inherit_info> currentConstraints = currentParent.Constraints_add;
 
-				if (currentParent.Cost - UB > RC_EPS || currentRes.Count == 0 || currentParent.Cost <= 0) 
+				if (currentParent.Cost - UB > RC_EPS || currentRes.Count == 0 || currentParent.Cost <= 0)
 				{
 					continue;
 				}
@@ -4505,10 +5194,10 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 					}
 				}
 
-				
+
 				List<KeyValuePair<int[], double>> sortedList = rfDic.ToList();
 
-				
+
 				sortedList.Sort((pair1, pair2) =>
 				{
 					double diff1 = Math.Abs(pair1.Value - 0.5);
@@ -4520,53 +5209,53 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				//double val = sortedList.First().Value;
 
 				List<int[]> bracnchTemp = sortedList
-	.Where(pair => pair.Value != 0)
-	.Select(pair => pair.Key)
-	.ToList();
+		.Where(pair => pair.Value != 0)
+		.Select(pair => pair.Key)
+		.ToList();
 				branchXIdx = bracnchTemp.First();
 
-				if (strongFirstFlag || sortedList.First().Value == 0)
-				{
-					rfDic = new Dictionary<int[], double>(new IntArrayComparer());
-					for (int p = 0; p < currentRes.Count; p++)
-					{
-						for (int i = 1; i <= N; i++)
-						{
-							for (int b = 0; b < W; b++)
-							{
-								if (currentRes[p].id == i)
-								{
-									if (rfDic.ContainsKey(new int[] { i, b, b }))
-									{
-										rfDic[new int[] { i, b, b }] += currentRes[p].lambda * (currentRes[p].p[b]);
-									}
+				//if (strongFirstFlag || sortedList.First().Value == 0)
+				//{
+				//	rfDic = new Dictionary<int[], double>(new IntArrayComparer());
+				//	for (int p = 0; p < currentRes.Count; p++)
+				//	{
+				//		for (int i = 1; i <= N; i++)
+				//		{
+				//			for (int b = 0; b < W; b++)
+				//			{
+				//				if (currentRes[p].id == i)
+				//				{
+				//					if (rfDic.ContainsKey(new int[] { i, b, b }))
+				//					{
+				//						rfDic[new int[] { i, b, b }] += currentRes[p].lambda * (currentRes[p].p[b]);
+				//					}
 
-									else
-									{
-										rfDic.Add(new int[] { i, b, b }, currentRes[p].lambda * currentRes[p].p[b]);
-									}
-								}
+				//					else
+				//					{
+				//						rfDic.Add(new int[] { i, b, b }, currentRes[p].lambda * currentRes[p].p[b]);
+				//					}
+				//				}
 
-							}
-						}
-					}
+				//			}
+				//		}
+				//	}
 
-					sortedList = rfDic.ToList();
+				//	sortedList = rfDic.ToList();
 
-					
-					sortedList.Sort((pair1, pair2) =>
-					{
-						double diff1 = Math.Abs(pair1.Value - 0.5);
-						double diff2 = Math.Abs(pair2.Value - 0.5);
-						return diff1.CompareTo(diff2);
-					});
 
-					//branchXIdx = sortedList.First().Key;
-					//val = sortedList.First().Value;
+				//	sortedList.Sort((pair1, pair2) =>
+				//	{
+				//		double diff1 = Math.Abs(pair1.Value - 0.5);
+				//		double diff2 = Math.Abs(pair2.Value - 0.5);
+				//		return diff1.CompareTo(diff2);
+				//	});
 
-					bracnchTemp.AddRange(sortedList.Where(pair => pair.Value != 0).Select(pair => pair.Key).ToList());
-					branchXIdx = bracnchTemp.First();
-				}
+				//	//branchXIdx = sortedList.First().Key;
+				//	//val = sortedList.First().Value;
+
+				//	bracnchTemp.AddRange(sortedList.Where(pair => pair.Value != 0).Select(pair => pair.Key).ToList());
+				//	branchXIdx = bracnchTemp.First();
+				//}
 
 				if (strongFirstFlag = true)
 				{
@@ -4850,7 +5539,19 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			}
 
 			Console.WriteLine("遍历了所有节点");
+			DateTime finish2 = DateTime.Now;
+			Console.WriteLine("Feas val " + UB);
+			Console.WriteLine("overall runtime " + (finish2 - now).TotalSeconds);
+			Console.WriteLine("root LS time: " + rootLSTime);
+			Console.WriteLine("root DP time: " + rootDPTime);
+			Console.WriteLine("root Cplex time " + rootCplexTime);
+			Console.WriteLine("root UB " + rootUB);
+			Console.WriteLine("root LB " + rootLB);
+			Console.WriteLine("IterNum " + IterNum);
+			Console.WriteLine("root ColumnNum " + rootColumnNum);
+			Console.WriteLine("root Time " + rootNodeTime);
 
+			Console.WriteLine("Node Num total " + NodeNum);
 			return (null, UB);
 		}
 
@@ -4993,6 +5694,15 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			{
 				conflictVessels.Add(vs[conflictVesselIdx.ElementAt(i)]);
 			}
+
+			for (int i = 0; i < vs.Count; i++)
+			{
+				if (vs[i].assigned == false)
+				{
+					conflictVessels.Add(vs[i]);
+				}
+			}
+
 			return (conflictVessels, conflictInfo);
 		}
 
@@ -5010,45 +5720,45 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 
 			for (int b = 0; b < W; b++)
 			{
-				for (int t = 0; t < T; t++) 
+				for (int t = 0; t < T; t++)
 				{
-					for (int i = 0; i < vs.Count; i++) 
+					for (int i = 0; i < vs.Count; i++)
 					{
-						if (vs[i].beta[b, t] == 1) 
+						if (vs[i].beta[b, t] == 1)
 						{
-							berthInterval[b][t] = 1;  
+							berthInterval[b][t] = 1;
 						}
 					}
 				}
 			}
 
-			
+
 			int start = -1;
-			for (int t = 0; t < T; t++) 
+			for (int t = 0; t < T; t++)
 			{
 				int berthUsedNum = 0;
-				for (int b = 0; b < W; b++) 
+				for (int b = 0; b < W; b++)
 				{
-					if (berthInterval[b][t] == 1) 
+					if (berthInterval[b][t] == 1)
 					{
 						berthUsedNum++;
 					}
 				}
 
-				
+
 				if (berthUsedNum <= W - 1)
 				{
-					if (start == -1)  
+					if (start == -1)
 					{
-						start = t;  
+						start = t;
 					}
 				}
 				else
 				{
-					if (start != -1)  
+					if (start != -1)
 					{
-						availableTimeIntervals.Add(new Tuple<int, int>(start, t - 1)); 
-						start = -1;  
+						availableTimeIntervals.Add(new Tuple<int, int>(start, t - 1));
+						start = -1;
 					}
 				}
 			}
@@ -5058,9 +5768,9 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				availableTimeIntervals.Add(new Tuple<int, int>(start, T - 1));
 			}
 
-			return availableTimeIntervals; 
+			return availableTimeIntervals;
 		}
-		
+
 
 		public static void AssignByFinishTime(List<Vessel> vessels)
 		{
@@ -5076,7 +5786,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 					}
 				}
 			}
-			
+
 			vessels.Sort((v1, v2) =>
 			{
 				int primary = v1.C.CompareTo(v2.C);
@@ -5085,22 +5795,22 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				return primary;
 			});
 
-			
+
 			var unassigned = new List<Vessel>(vessels);
 
-			
+
 			for (int berthNum = 0; berthNum < W; berthNum++)
 			{
-				
+
 				if (unassigned.Count == 0) break;
 
-				
-				double lastFinish = double.MinValue; 
+
+				double lastFinish = double.MinValue;
 
 				for (int i = 0; i < unassigned.Count; i++)
 				{
 					var v = unassigned[i];
-					
+
 					if (v.S > lastFinish)
 					{
 						v.w = berthNum;
@@ -5174,7 +5884,9 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 		public static double rootNodeTime = 0;
 		public static int rootColumnNum = 0;
 		public static double rootLSTime = 0;
+		public static double rootDPTime = 0;
 		public static double LSTime = 0;
+		public static double DPTime = 0;
 		public static double rootCplexTime = 0;
 		public static double CplexTime = 0;
 		public static int IterNum = 0;
@@ -5184,11 +5896,11 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 		static void Main(string[] args)
 		{
 			timer = DateTime.Now;
-			conflictDataPath = "C:\\Users\\yang_\\Desktop\\conflictData144.txt";
+			conflictDataPath = "C:\\Users\\yang_\\Desktop\\conflictData7.txt";
 
-			List<Vessel> initialVessels = ReadVesselData("C:\\Users\\yang_\\Desktop\\Data\\vesselData\\5\\hard\\vesselData3" +
+			List<Vessel> initialVessels = ReadVesselData("C:\\Users\\yang_\\Desktop\\vesselData5" +
 				".txt");
-			initialVessel(initialVessels, "C:\\Users\\yang_\\Desktop\\switchingCostData.txt", conflictDataPath);
+			initialVessel(initialVessels, "C:\\Users\\yang_\\Desktop\\switchingCostData7.txt", conflictDataPath);
 			InitialNodes();
 
 			List<Vessel> vessels = initialVessels.Select(x => new Vessel(x)).ToList();
@@ -5204,6 +5916,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 			for (int i = 0; i < conflictVessels.Item1.Count; i++)
 			{
 				vessels.Remove(conflictVessels.Item1[i]);
+
 			}
 
 			while (conflictVessels.Item1.Count != 0)
@@ -5256,7 +5969,8 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 							}
 						}
 					}
-					
+
+					tempRes.resSP.assigned = true;
 					//tempRes.resSP.a = conflictVessels.Item1[0].a;
 					//tempRes.resSP.d = conflictVessels.Item1[0].d;
 					//tempRes.resSP.g = conflictVessels.Item1[0].g;
@@ -5318,6 +6032,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				Console.WriteLine("Opt val " + bpObjVal);
 				Console.WriteLine("overall runtime " + (finish - now).TotalSeconds);
 				Console.WriteLine("root LS time: " + rootLSTime);
+				Console.WriteLine("root DP time: " + rootDPTime);
 				Console.WriteLine("root Cplex time " + rootCplexTime);
 				Console.WriteLine("root UB " + rootUB);
 				Console.WriteLine("root LB " + rootLB);
@@ -5446,7 +6161,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 		{
 			public bool Equals(int[] x, int[] y)
 			{
-				
+
 				if (x == null || y == null)
 					return x == y;
 
@@ -5479,17 +6194,17 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 		{
 			public bool Equals(List<int> x, List<int> y)
 			{
-				
+
 				if (x == null && y == null)
 					return true;
 				if (x == null || y == null)
 					return false;
 
-				
+
 				if (x.Count != y.Count)
 					return false;
 
-				
+
 				var xSorted = x.OrderBy(i => i).ToList();
 				var ySorted = y.OrderBy(i => i).ToList();
 				return xSorted.SequenceEqual(ySorted);
@@ -5500,7 +6215,7 @@ new[]{1,6},   new[]{6,0},   new[]{3,6,5}, new[]{1,5},  new[]{0,3,4}
 				if (obj == null)
 					return 0;
 
-				
+
 				int hash = 17;
 				foreach (int item in obj.OrderBy(i => i))
 				{
