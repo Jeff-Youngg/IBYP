@@ -6,39 +6,39 @@ using System.Text.RegularExpressions;
 
 class Program
 {
-	
-	const string YardFile = @"C:\Users\yang_\Desktop\新建文件夹\vesselData\12\UVA\Result\EXM1\11.txt";        
-	const string ParamFile = @"C:\Users\yang_\Desktop\新建文件夹\vesselData\12\UVA\Data\vesselData1.txt"; 
-	static readonly int[] SwitchCost = { 1200, 3000, 2500, 2100, 3200, 1300, 2100, 2500, 2700 };     
+	/* ======= 路径与常量 ======= */
+	const string resultFile = @"C:\Users\yang_\Desktop\res\uva\5\dp.txt";        // yard+berth 混合文件
+	const string vesselFile = @"C:\Users\yang_\Desktop\vesselData5.txt"; // id h g a d …
+	static readonly int[] SwitchCost = { 1200, 3000, 2500, 2100, 3200, 1300, 2100 };     // r → 切换费率
 
-	
+	/* ======= 数据结构 ======= */
 	record YardRec(int T, int R);
 	record VParam(int Id, int H, int G, int A, int D);
 	record VCost(int Id, int Ci, int Seg, double Hold, double Tard, double Sw, double Tot);
 
-	
+	/* ======= 入口 ======= */
 	static void Main()
 	{
-		
-		ParseYardAndBerth(YardFile,
-						  out var yardRaw,   
-						  out var berthMap); 
+		/* 1) 解析 yard-assignment 与 berth-allocation --------------------- */
+		ParseYardAndBerth(resultFile,
+						  out var yardRaw,   // vessel → List<YardRec>（含重复 t）
+						  out var berthMap); // vessel → List<int>
 
-		
+		/* 2) 压缩同一 t 的重复 yard 行（取第一条 r） ----------------------- */
 		var yardMap = new Dictionary<int, List<YardRec>>();
 		foreach (var (vid, recs) in yardRaw)
 		{
-			var dict = new Dictionary<int, int>();               
+			var dict = new Dictionary<int, int>();               // t → r
 			foreach (var rec in recs)
 				if (!dict.ContainsKey(rec.T)) dict[rec.T] = rec.R;
 			yardMap[vid] = dict.Select(p => new YardRec(p.Key, p.Value))
 							   .OrderBy(p => p.T).ToList();
 		}
 
-		
-		var param = ParseParams(ParamFile);
+		/* 3) 读参数文件 ---------------------------------------------------- */
+		var param = ParseParams(vesselFile);
 
-		
+		/* 4) 逐船计算费用 -------------------------------------------------- */
 		var res = new List<VCost>();
 
 		foreach (int vid in yardMap.Keys.OrderBy(v => v))
@@ -53,13 +53,13 @@ class Program
 			var list = yardMap[vid];
 			CalcSegmentsAndSwitch(list, out int seg, out double sw);
 
-			int Ci = bl.Max();                                
-			double hold = p.H * Math.Max(0, Ci - p.A);         
-			double tard = p.G * Math.Max(0, Ci - p.D);        
+			int Ci = bl.Max();                                 // 离泊时间
+			double hold = p.H * Math.Max(0, Ci - p.A);         // h_i max(0, C_i − a_i)
+			double tard = p.G * Math.Max(0, Ci - p.D);         // g_i max(0, C_i − d_i)
 			res.Add(new VCost(vid, Ci, seg, hold, tard, sw, hold + tard + sw));
 		}
 
-		
+		/* 5) 输出总表 ------------------------------------------------------ */
 		Console.WriteLine("Vessel |  C_i | Seg |  Hold |  Tard | Switch |  Total");
 		Console.WriteLine("-------|-----:|----:|------:|------:|-------:|-------:");
 		double tardCostSum = 0;
@@ -78,13 +78,13 @@ class Program
 		Console.WriteLine($"switchTimeSum = "+ switchTimeSum);
 		Console.WriteLine($"switchCostSum = " + switchCostSum);
 
-		
+		/* 6) 额外小表：d_i 与切换次数 ------------------------------------ */
 		Console.WriteLine("\nVessel | tardTime | Switches");
 		Console.WriteLine("-------|---------:|---------:");
 		double tardTimeSum = 0;
 		foreach (var r in res)
 		{
-			int tardTime = Math.Max(0, r.Ci - param[r.Id].D); 
+			int tardTime = Math.Max(0, r.Ci - param[r.Id].D); // 计算滞期时长
 			Console.WriteLine($"{r.Id,6} | {tardTime,8} | {r.Seg,8}");
 			tardTimeSum += tardTime;
 		}
@@ -92,7 +92,7 @@ class Program
 		Console.WriteLine("tardTimeSum = "+ tardTimeSum);
 	}
 
-	
+	/* ======= 解析 yard / berth 区块 ===================================== */
 	static void ParseYardAndBerth(
 		string file,
 		out Dictionary<int, List<YardRec>> yardMap,
@@ -134,27 +134,27 @@ class Program
 		}
 	}
 
-	
+	/* ======= 解析参数文件 (id h g a d …) ================================= */
 	static Dictionary<int, VParam> ParseParams(string file)
 	{
 		var map = new Dictionary<int, VParam>();
 		foreach (string raw in File.ReadLines(file))
 		{
 			var tk = raw.Trim().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-			if (tk.Length < 5) continue;              
+			if (tk.Length < 5) continue;               // 至少 id h g a d
 			int id = int.Parse(tk[0]);
 
 			map[id] = new VParam(
 				id,
-				int.Parse(tk[1]),  
-				int.Parse(tk[2]),  
-				int.Parse(tk[3]),  
-				int.Parse(tk[4])); 
+				int.Parse(tk[1]),  // h_i
+				int.Parse(tk[2]),  // g_i
+				int.Parse(tk[3]),  // a_i
+				int.Parse(tk[4])); // d_i
 		}
 		return map;
 	}
 
-	
+	/* ======= 统计段数与切换费用 ========================================= */
 	static void CalcSegmentsAndSwitch(
 		List<YardRec> lst, out int seg, out double cost)
 	{
