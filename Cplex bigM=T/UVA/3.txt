@@ -1,0 +1,70 @@
+Total (root+branch&cut) = 3602.39 sec. (1132933.89 ticks)
+solution status = Feasible
+solution value = 222350
+gap = 0.2702053182025684
+Vessel 1:
+  S = 8
+  C = 21
+  D = 0
+  raw material type q=0: 1:0 5:0 6:1
+  raw material type q=2: 2:1 4:0 6:0
+Vessel 2:
+  S = 12
+  C = 27
+  D = 0
+  raw material type q=0: 1:0 5:1 6:0
+  raw material type q=4: 0:1 4:0 6:0
+  raw material type q=5: 3:0 5:0 6:1
+Vessel 3:
+  S = 26
+  C = 36
+  D = 0
+  raw material type q=1: 1:0 3:0 5:1
+  raw material type q=3: 3:0 5:1
+
+x = 1 entries (ordered by i, k, r, t):
+Vessel i = 1
+  local material k = 0, global type q = 0
+    x[1,0,6,8] = 1
+    x[1,0,6,9] = 1
+    x[1,0,6,10] = 1
+    x[1,0,6,11] = 1
+    x[1,0,6,12] = 1
+  local material k = 1, global type q = 2
+    x[1,1,2,14] = 1
+    x[1,1,2,15] = 1
+    x[1,1,2,16] = 1
+    x[1,1,2,17] = 1
+    x[1,1,2,18] = 1
+    x[1,1,2,19] = 1
+    x[1,1,2,20] = 1
+Vessel i = 2
+  local material k = 0, global type q = 0
+    x[2,0,5,12] = 1
+    x[2,0,5,13] = 1
+    x[2,0,5,14] = 1
+    x[2,0,5,15] = 1
+    x[2,0,5,16] = 1
+  local material k = 1, global type q = 4
+    x[2,1,0,23] = 1
+    x[2,1,0,24] = 1
+    x[2,1,0,25] = 1
+    x[2,1,0,26] = 1
+  local material k = 2, global type q = 5
+    x[2,2,6,18] = 1
+    x[2,2,6,19] = 1
+    x[2,2,6,20] = 1
+    x[2,2,6,21] = 1
+Vessel i = 3
+  local material k = 0, global type q = 1
+    x[3,0,5,26] = 1
+    x[3,0,5,27] = 1
+    x[3,0,5,28] = 1
+    x[3,0,5,29] = 1
+  local material k = 1, global type q = 3
+    x[3,1,5,31] = 1
+    x[3,1,5,32] = 1
+    x[3,1,5,33] = 1
+    x[3,1,5,34] = 1
+    x[3,1,5,35] = 1
+Elapsed time = 3632.4743071
