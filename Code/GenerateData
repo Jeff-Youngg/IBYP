@@ -1,0 +1,225 @@
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace InstanceGenerationOptimization
+{
+public class TimeWindow
+{
+public int Start { get; set; }
+public int End { get; set; }
+public int Length => End - Start + 1;
+
+	// 克隆当前时间窗，便于邻域搜索时复制实例
+	public TimeWindow Clone() => new TimeWindow { Start = this.Start, End = this.End };
+
+	public override string ToString() => $"Start = {Start}, End = {End}, Length = {Length}";
+}
+
+class Program
+{
+	// —— 全局常量 —— 
+	const int MinLen = 12;              // 最短允许长度
+	const int MaxLen = 21;              // 最长允许长度
+	const double LenPenaltyWeight = 10; // 长度惩罚权重
+
+	static Random rnd = new Random();
+
+	// —— 1. 计算平均重叠度 —— 
+	static double ComputeAverageOverlap(List<TimeWindow> windows)
+	{
+		int T_min = windows.Min(w => w.Start);
+		int T_max = windows.Max(w => w.End);
+		int totalSlots = T_max - T_min + 1;
+
+		int totalOverlap = 0;
+		for (int t = T_min; t <= T_max; t++)
+		{
+			int count = windows.Count(w => w.Start <= t && t <= w.End);
+			totalOverlap += count;
+		}
+		return (double)totalOverlap / totalSlots;
+	}
+
+	// —— 2. 计算最大重叠度 —— 
+	static int ComputeMaximumOverlap(List<TimeWindow> windows)
+	{
+		int T_min = windows.Min(w => w.Start);
+		int T_max = windows.Max(w => w.End);
+		int maxOverlap = 0;
+
+		for (int t = T_min; t <= T_max; t++)
+		{
+			int count = windows.Count(w => w.Start <= t && t <= w.End);
+			if (count > maxOverlap) maxOverlap = count;
+		}
+		return maxOverlap;
+	}
+
+	// —— 3. 评价函数：重叠度 + 最大重叠硬惩罚 + 长度惩罚 —— 
+	static double EvaluateInstance(
+	    List<TimeWindow> windows,
+	    double targetAvg,
+	    int maxAllowedOverlap,
+	    int minDesiredLen,
+	    double lenPenaltyWeight)
+	{
+		double avgOverlap = ComputeAverageOverlap(windows);
+		int maxOverlap = ComputeMaximumOverlap(windows);
+
+		// (1) 让平均重叠度逼近目标
+		double cost = Math.Pow(avgOverlap - targetAvg, 2);
+
+		// (2) 最大重叠度硬惩罚
+		if (maxOverlap > maxAllowedOverlap)
+			cost += 1000 * (maxOverlap - maxAllowedOverlap);
+
+		// (3) 长度惩罚：若长度 < minDesiredLen，则按差值累计罚分
+		double lengthPenalty = windows.Sum(w =>
+		    Math.Max(0, minDesiredLen - w.Length));
+		cost += lenPenaltyWeight * lengthPenalty;
+
+		return cost;
+	}
+
+	// —— 4. 随机生成初始算例 —— 
+	static List<TimeWindow> GenerateInitialInstance(int N)
+	{
+		var windows = new List<TimeWindow>();
+
+		for (int i = 0; i < N; i++)
+		{
+			int L = rnd.Next(MinLen, MaxLen + 1);   // [15,25]
+			int start = rnd.Next(2, 20);            // 起始时间示例
+			int end = start + L - 1;
+			if (end > 130) end = 130;
+
+			windows.Add(new TimeWindow { Start = start, End = end });
+		}
+		return windows;
+	}
+
+	// —— 5. 生成邻域算例（平移或改长度）—— 
+	static List<TimeWindow> GetNeighborInstance(List<TimeWindow> current)
+	{
+		// 深拷贝
+		var neighbor = current.Select(w => w.Clone()).ToList();
+
+		// 随机选一个时间窗
+		int idx = rnd.Next(neighbor.Count);
+		var tw = neighbor[idx];
+
+		if (rnd.NextDouble() < 0.2)                 // 20% 概率平移
+		{
+			int shift = rnd.Next(-2, 3);            // [-2,2]
+			tw.Start += shift;
+			tw.End += shift;
+
+			if (tw.Start < 2) { tw.Start = 2; tw.End = tw.Start + tw.Length - 1; }
+			if (tw.End > 130) { tw.End = 130; tw.Start = tw.End - tw.Length + 1; }
+		}
+		else                                         // 80% 概率改长度
+		{
+			int delta = rnd.Next(-1, 3);            // {-1,0,1,2}
+			int newLength = tw.Length + delta;
+
+			if (newLength < MinLen) newLength = MinLen;
+			if (newLength > MaxLen) newLength = MaxLen;
+
+			tw.End = tw.Start + newLength - 1;
+			if (tw.End > 130) tw.End = 130;
+		}
+
+		return neighbor;
+	}
+
+	// —— 6. 主程序 —— 
+	static void Main(string[] args)
+	{
+		int N = 12;                             // 生成时间窗数量
+		double targetAvgOverlap = 2.4;        // 目标平均重叠度
+		int maxAllowedOverlap = 4;             // 最大允许重叠度
+		double minAcceptableAvgOverlap = 2.35;  // 若平均重叠度太低，重试
+
+		// 模拟退火参数
+		double temperature = 100.0;
+		double coolingRate = 0.95;
+		int iterationsPerTemp = 100;
+
+		List<TimeWindow> bestInstance = null;
+		double bestCost = double.MaxValue;
+		double bestAvgOverlap = 0;
+		int totalIterations = 0;
+		int simulationAttempts = 0;
+
+		// 重复尝试直到平均重叠度 ≥ minAcceptableAvgOverlap
+		do
+		{
+			simulationAttempts++;
+
+			// 生成初始算例并评估
+			var currentInstance = GenerateInitialInstance(N);
+			double currentCost = EvaluateInstance(
+			    currentInstance,
+			    targetAvgOverlap,
+			    maxAllowedOverlap,
+			    MinLen,
+			    LenPenaltyWeight);
+
+			bestInstance = currentInstance;
+			bestCost = currentCost;
+
+			// 模拟退火迭代
+			double temp = temperature;
+			while (temp > 0.1)
+			{
+				for (int i = 0; i < iterationsPerTemp; i++)
+				{
+					var neighbor = GetNeighborInstance(currentInstance);
+					double neighborCost = EvaluateInstance(
+					    neighbor,
+					    targetAvgOverlap,
+					    maxAllowedOverlap,
+					    MinLen,
+					    LenPenaltyWeight);
+
+					double delta = neighborCost - currentCost;
+					if (delta < 0 || rnd.NextDouble() < Math.Exp(-delta / temp))
+					{
+						currentInstance = neighbor;
+						currentCost = neighborCost;
+
+						if (currentCost < bestCost)
+						{
+							bestInstance = currentInstance;
+							bestCost = currentCost;
+						}
+					}
+					totalIterations++;
+				}
+				temp *= coolingRate;
+			}
+
+			bestAvgOverlap = ComputeAverageOverlap(bestInstance);
+			Console.WriteLine(
+			    $"Attempt {simulationAttempts}: AvgOverlap = {bestAvgOverlap:F3}, Cost = {bestCost:F3}");
+		}
+		while (bestAvgOverlap < minAcceptableAvgOverlap);
+
+		// 按起始时间排序并输出最终结果
+		bestInstance = bestInstance.OrderBy(w => w.Start).ToList();
+		Console.WriteLine("\nBest instance found:");
+		foreach (var tw in bestInstance)
+			Console.WriteLine(tw);
+		Console.WriteLine($"Final Cost: {bestCost:F3}");
+		Console.WriteLine($"Average Overlap: {bestAvgOverlap:F3}");
+		Console.WriteLine($"Maximum Overlap: {ComputeMaximumOverlap(bestInstance)}");
+		Console.WriteLine($"Total iterations: {totalIterations}");
+		Console.WriteLine($"Total attempts: {simulationAttempts}");
+
+		Console.ReadLine();
+	}
+}
+}
+
